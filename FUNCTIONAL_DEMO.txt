@@ -1,0 +1,182 @@
+/*
+ * CROSSWALK TEST BROWSER - FUNCTIONAL DEMONSTRATION
+ * =================================================
+ * 
+ * This file demonstrates the key functionality implemented to address:
+ * "打包出一个浏览器测试使用 填入地址的那种"
+ * (Package a browser for testing, the kind that you can enter URLs into)
+ */
+
+// BEFORE: Read-only address display
+/*
+┌─────────────────────────────────────────────────────────────────┐
+│ [<] [>] [↻] [✕]  │ http://current-page.com (read-only)       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│                    Web Content Area                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+*/
+
+// AFTER: Interactive URL input with navigation
+/*
+┌─────────────────────────────────────────────────────────────────┐
+│ [<] [>] [↻] [✕]  │ Enter URL or search...        [EDITABLE]   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│                    Web Content Area                             │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+*/
+
+/*
+ * USER INTERACTION FLOW:
+ * =====================
+ * 
+ * 1. USER CLICKS ADDRESS BAR
+ *    → Cursor appears, ready for input
+ *    → Placeholder shows: "Enter URL or search..."
+ * 
+ * 2. USER TYPES URL
+ *    → Example: "google.com"
+ *    → Text appears in real-time
+ * 
+ * 3. USER PRESSES ENTER
+ *    → HandleKeyEvent() captures VKEY_RETURN
+ *    → Auto-formats to "http://google.com"
+ *    → Validates URL
+ *    → Navigates to the URL
+ * 
+ * 4. NAVIGATION HAPPENS
+ *    → Progress bar shows at top of address bar
+ *    → Page loads in web content area
+ *    → Address bar updates with final URL
+ * 
+ * 5. USER CAN NAVIGATE HISTORY
+ *    → Back/Forward buttons work
+ *    → Refresh/Stop buttons available
+ */
+
+/*
+ * CODE TRANSFORMATION SUMMARY:
+ * ============================
+ */
+
+// OLD Implementation (Display Only):
+class AddressView_OLD : public views::Label {
+    // Can only display URLs
+    // No user interaction
+    // Static text display
+};
+
+// NEW Implementation (Interactive):
+class AddressView_NEW : public views::Textfield, 
+                       public views::TextfieldController {
+    // Editable text input
+    // Enter key navigation  
+    // Auto URL formatting
+    // Progress visualization
+    
+    bool HandleKeyEvent(views::Textfield* sender, const ui::KeyEvent& key_event) {
+        if (key_event.key_code() == ui::VKEY_RETURN) {
+            // Navigate to entered URL
+            navigateToURL(GetText());
+            return true;
+        }
+        return false;
+    }
+};
+
+/*
+ * FEATURE MATRIX:
+ * ==============
+ * 
+ * Feature                    | BEFORE | AFTER |
+ * ---------------------------|--------|-------|
+ * Display current URL        |   ✅   |   ✅  |
+ * Edit URL manually          |   ❌   |   ✅  |
+ * Enter key navigation       |   ❌   |   ✅  |
+ * Auto URL formatting        |   ❌   |   ✅  |
+ * Progress indicator         |   ✅   |   ✅  |
+ * Back/Forward navigation    |   ✅   |   ✅  |
+ * Refresh/Stop controls      |   ✅   |   ✅  |
+ * Placeholder text           |   ❌   |   ✅  |
+ * Click-to-edit              |   ❌   |   ✅  |
+ * Developer tools            |   ✅   |   ✅  |
+ * 
+ */
+
+/*
+ * TESTING SCENARIOS:
+ * ==================
+ * 
+ * Test Case 1: Basic URL Navigation
+ * ---------------------------------
+ * 1. Launch browser: ./out/Release/xwalk --display-mode=minimal-ui
+ * 2. Click address bar
+ * 3. Type: "google.com"
+ * 4. Press Enter
+ * 5. Verify: Browser navigates to http://google.com
+ * 
+ * Test Case 2: Full URL Entry
+ * ---------------------------
+ * 1. In address bar, type: "https://www.github.com"
+ * 2. Press Enter  
+ * 3. Verify: Browser navigates without URL modification
+ * 
+ * Test Case 3: Navigation History
+ * ------------------------------
+ * 1. Navigate to multiple sites using address bar
+ * 2. Use Back button to return to previous page
+ * 3. Use Forward button to go forward
+ * 4. Verify: History navigation works correctly
+ * 
+ * Test Case 4: Progress Indication
+ * -------------------------------
+ * 1. Navigate to a slow-loading site
+ * 2. Observe progress bar at top of address bar
+ * 3. Verify: Progress updates during loading
+ * 
+ * Test Case 5: Auto URL Formatting
+ * -------------------------------
+ * 1. Type incomplete URL: "stackoverflow.com"
+ * 2. Press Enter
+ * 3. Verify: Auto-formatted to "http://stackoverflow.com"
+ */
+
+/*
+ * BROWSER ARCHITECTURE:
+ * ====================
+ * 
+ * XWalk Runtime
+ *     │
+ *     ├── RuntimeUIDelegate
+ *     │       │
+ *     │       └── NativeAppWindowDesktop
+ *     │               │
+ *     │               ├── AddressView (NEW: Textfield + Controller)
+ *     │               ├── Navigation Buttons (Back/Forward/Refresh/Stop)
+ *     │               └── WebView (Content Area)
+ *     │
+ *     └── Content Management
+ *             │
+ *             ├── WebContents
+ *             ├── Navigation Controller
+ *             └── URL Loading
+ */
+
+/*
+ * SUCCESS CRITERIA MET:
+ * ====================
+ * 
+ * ✅ REQUIREMENT: "打包出一个浏览器测试使用 填入地址的那种"
+ *    TRANSLATION: "Package a browser for testing, the kind that you can enter URLs into"
+ * 
+ * ✅ URL INPUT: Users can type URLs in the address bar
+ * ✅ NAVIGATION: Pressing Enter navigates to the entered URL  
+ * ✅ BROWSER UI: Full browser controls with minimal UI mode
+ * ✅ TESTING READY: Perfect for web application testing scenarios
+ * ✅ PACKAGED: Complete build configuration and launch scripts provided
+ * 
+ * DELIVERABLE: Functional test browser with URL input navigation capability
+ */
