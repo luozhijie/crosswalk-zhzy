@@ -17,10 +17,13 @@
 #include "ui/aura/client/screen_position_client.h"
 #include "ui/aura/window.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/events/event.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/gfx/canvas.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/button/label_button.h"
+#include "ui/views/controls/textfield/textfield.h"
+#include "ui/views/controls/textfield/textfield_controller.h"
 #include "ui/views/layout/box_layout.h"
 #include "ui/views/layout/grid_layout.h"
 #include "ui/views/layout/fill_layout.h"
@@ -43,10 +46,13 @@ struct DownloadSelectFileParams {
   content::DownloadTargetCallback callback;
 };
 
-class NativeAppWindowDesktop::AddressView : public views::Label {
+class NativeAppWindowDesktop::AddressView : public views::Textfield,
+                                               public views::TextfieldController {
  public:
-  AddressView()
-    : progress_(0) {
+  explicit AddressView(NativeAppWindowDesktop* window)
+    : progress_(0), window_(window) {
+    SetController(this);
+    SetPlaceholderText(base::ASCIIToUTF16("Enter URL or search..."));
   }
   ~AddressView() override {}
 
@@ -56,27 +62,55 @@ class NativeAppWindowDesktop::AddressView : public views::Label {
     SchedulePaint();
   }
 
+  // TextfieldController implementation
+  bool HandleKeyEvent(views::Textfield* sender,
+                      const ui::KeyEvent& key_event) override {
+    if (key_event.key_code() == ui::VKEY_RETURN && 
+        key_event.type() == ui::ET_KEY_PRESSED) {
+      // Navigate to the URL when Enter is pressed
+      std::string url_text = base::UTF16ToUTF8(GetText());
+      if (!url_text.empty()) {
+        // Add http:// prefix if no protocol is specified
+        if (url_text.find("://") == std::string::npos) {
+          url_text = "http://" + url_text;
+        }
+        GURL url(url_text);
+        if (url.is_valid() && window_->web_contents_) {
+          window_->web_contents_->GetController().LoadURL(
+              url, content::Referrer(), ui::PAGE_TRANSITION_TYPED,
+              std::string());
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
  private:
   void OnPaint(gfx::Canvas* canvas) override {
-    static const SkColor bg_color = SkColorSetARGB(128, 86, 167, 247);
-    gfx::Rect content_bounds = GetContentsBounds();
-    int bar_left = content_bounds.x();
-    int bar_top = content_bounds.y();
-    int bar_width = content_bounds.width();
-    int bar_height = content_bounds.height();
+    views::Textfield::OnPaint(canvas);
+    
+    // Draw progress bar on top
+    if (progress_ > 0 && progress_ < 1) {
+      static const SkColor bg_color = SkColorSetARGB(128, 86, 167, 247);
+      gfx::Rect content_bounds = GetContentsBounds();
+      int bar_left = content_bounds.x();
+      int bar_top = content_bounds.y();
+      int bar_width = content_bounds.width();
+      int bar_height = 2;  // Thin progress bar at the top
 
-    SkPath path;
-    path.addRect(bar_left, bar_top + 2, bar_width * progress_, bar_height - 2);
-    SkPaint paint;
-    paint.setStyle(SkPaint::kFill_Style);
-    paint.setFlags(SkPaint::kAntiAlias_Flag);
-    paint.setColor(bg_color);
-    canvas->DrawPath(path, paint);
-
-    views::Label::OnPaint(canvas);
+      SkPath path;
+      path.addRect(bar_left, bar_top, bar_width * progress_, bar_height);
+      SkPaint paint;
+      paint.setStyle(SkPaint::kFill_Style);
+      paint.setFlags(SkPaint::kAntiAlias_Flag);
+      paint.setColor(bg_color);
+      canvas->DrawPath(path, paint);
+    }
   }
 
   double progress_;
+  NativeAppWindowDesktop* window_;
 };
 
 class NativeAppWindowDesktop::DevToolsWebContentsObserver
@@ -254,7 +288,7 @@ void NativeAppWindowDesktop::InitMinimalUI() {
         stop_button_size.width() / 2);
     toolbar_column_set->AddPaddingColumn(0, 2);
     // URL entry
-    address_bar_ = new AddressView();
+    address_bar_ = new AddressView(this);
     toolbar_column_set->AddColumn(views::GridLayout::FILL,
                                   views::GridLayout::FILL, 1,
                                   views::GridLayout::USE_PREF, 0, 0);
