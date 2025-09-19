@@ -1,0 +1,16 @@
+{
+  "name": "Crosswalk Test Browser",
+  "version": "1.0.0",
+  "manifest_version": 1,
+  "start_url": "test_page.html",
+  "display": "minimal-ui",
+  "description": "A test browser application using Crosswalk runtime with URL navigation",
+  "icons": {
+    "48": "icon-48.png",
+    "96": "icon-96.png",
+    "128": "icon-128.png"
+  },
+  "permissions": [
+    "internet"
+  ]
+}
